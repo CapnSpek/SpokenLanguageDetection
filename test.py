@@ -62,6 +62,17 @@ def plot_mfccs(mfccs):
             axes[x,y].get_yaxis().set_visible(False)
             i += 1
             
+def envelope(y, rate, threshold):
+    mask = []
+    y = pd.Series(y).apply(np.abs)
+    y_mean = y.rolling(window=int(rate/10), min_periods=1, center=True).mean()
+    for mean in y_mean:
+        if mean > threshold:
+            mask.append(True)
+        else:
+            mask.append(False)
+    return mask            
+
 def calc_fft(y, rate):
     n = len(y)
     freq = np.fft.rfftfreq(n, d=1/rate)
@@ -94,6 +105,8 @@ mfccs = {}
 for c in classes:
     wav_file = df[df.label == c].iloc[0, 0]
     signal, rate = librosa.load(train_path + '/' + wav_file, sr=22050)
+    mask = envelope(signal, rate, 0.0005)
+    signal = signal[mask]
     signals[c] = signal
     fft[c] = calc_fft(signal, rate)
     
